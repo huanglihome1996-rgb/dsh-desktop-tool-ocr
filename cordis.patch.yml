@@ -1,0 +1,8 @@
+- insert:
+    - id: desktop-auto-ocr
+      name: dsh-desktop-tool-ocr
+      inject: [llm, attachments]
+      config:
+        backend:
+          type: nbocr
+          command: nbocr

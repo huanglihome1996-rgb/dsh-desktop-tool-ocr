@@ -1,0 +1,18 @@
+{
+  "name": "dsh-desktop-tool-ocr",
+  "repository": { "type": "git", "url": "git+https://github.com/huanglihome1996-rgb/dsh-desktop-tool-ocr.git" },
+  "bugs": { "url": "https://github.com/huanglihome1996-rgb/dsh-desktop-tool-ocr/issues" },
+  "homepage": "https://github.com/huanglihome1996-rgb/dsh-desktop-tool-ocr#readme",
+  "version": "0.1.0",
+  "description": "Automatic image input for DSH: native vision passthrough and pluggable local OCR or remote vision backends",
+  "type": "module",
+  "main": "src/index.mjs",
+  "exports": { ".": "./src/index.mjs", "./backends": "./src/backends.mjs", "./package.json": "./package.json" },
+  "files": ["src", "cordis.patch.yml", "README.md", "LICENSE"],
+  "engines": { "node": ">=22.19" },
+  "license": "MIT",
+  "scripts": { "test": "node --test test/*.test.mjs" },
+  "peerDependencies": { "@deepseek-ai/dsh-llm": "0.2.2-rc.1", "@deepseek-ai/dsh-attachment": "0.2.2-rc.1" },
+  "peerDependenciesMeta": { "@deepseek-ai/dsh-llm": {"optional": true}, "@deepseek-ai/dsh-attachment": {"optional": true} },
+  "dsh": { "bundle": { "patch": "cordis.patch.yml" } }
+}
