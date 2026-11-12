@@ -23,7 +23,23 @@ DSH 桌面端自动识图插件：**截图 → 粘贴到聊天框 → 发送 →
 
 ## 安装
 
-本仓库目前提供源码及可打包 npm bundle，**尚未发布到 npm 注册表**。
+### 公开下载安装包
+
+从 [GitHub Releases](https://github.com/huanglihome1996-rgb/dsh-desktop-tool-ocr/releases) 下载 `.tgz`，在 DSH 桌面端扩展管理中安装。发布包同时附有 SHA-256 校验文件。
+
+### 在 DSH「发现」中安装
+
+启用实验性的「自定义插件索引」，在「发现 → 添加索引源」填入：
+
+```text
+https://raw.githubusercontent.com/huanglihome1996-rgb/dsh-desktop-tool-ocr/main/market/index.json
+```
+
+索引固定到发布版本的 Git 提交，不跟随 main 执行未知更新。该索引由本项目维护，不代表 DeepSeek 官方背书。**首次安装仍需配置本地 OCR 引擎或其他识别后端。**
+
+### 从源码打包
+
+尚未完成 npm 注册表发布时，可使用以下方式；不要把「已生成 npm 安装包」误认为「已发布到 npm」。
 
 ```powershell
 # 在源码目录打包
