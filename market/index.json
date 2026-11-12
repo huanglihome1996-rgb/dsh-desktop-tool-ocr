@@ -1,23 +1,55 @@
 {
   "format": 1,
-  "title": {"en": "Desktop OCR plugins", "zh": "桌面自动识图插件"},
-  "description": {"en": "Community-maintained DSH plugins; not an official DeepSeek index.", "zh": "社区维护的 DSH 插件索引，非 DeepSeek 官方索引。"},
-  "plugins": [{
-    "name": "dsh-desktop-tool-ocr",
-    "title": {"en": "Desktop Auto Vision & OCR", "zh": "桌面自动识图与可插拔 OCR"},
-    "description": {"en": "Native image passthrough and pluggable local OCR or opt-in remote vision recognition.", "zh": "视觉模型原图直传，非视觉模型自动使用本地 OCR 或显式启用的线上识图后端。"},
-    "author": "huanglihome1996-rgb",
-    "homepage": "https://github.com/huanglihome1996-rgb/dsh-desktop-tool-ocr#readme",
-    "repository": {"url": "https://github.com/huanglihome1996-rgb/dsh-desktop-tool-ocr"},
-    "versions": [{
-      "version": "0.1.0",
-      "publishTimestamp": 1794465937,
-      "engines": {"dsh": "0.2.2-rc.1"},
-      "source": {
-        "type": "git",
-        "url": "https://github.com/huanglihome1996-rgb/dsh-desktop-tool-ocr",
-        "commit": "0c5b4f703309c344b5939f901c155e80757ca824"
-      }
-    }]
-  }]
+  "title": {
+    "en": "Desktop OCR plugins",
+    "zh": "桌面自动识图插件"
+  },
+  "description": {
+    "en": "Community-maintained DSH plugins; not an official DeepSeek index.",
+    "zh": "社区维护的 DSH 插件索引，非 DeepSeek 官方索引。"
+  },
+  "plugins": [
+    {
+      "name": "dsh-desktop-tool-ocr",
+      "title": {
+        "en": "Desktop Auto Vision & OCR",
+        "zh": "桌面自动识图与可插拔 OCR"
+      },
+      "description": {
+        "en": "Native image passthrough and pluggable local OCR or opt-in remote vision recognition.",
+        "zh": "视觉模型原图直传，非视觉模型自动使用本地 OCR 或显式启用的线上识图后端。"
+      },
+      "author": "huanglihome1996-rgb",
+      "homepage": "https://github.com/huanglihome1996-rgb/dsh-desktop-tool-ocr#readme",
+      "repository": {
+        "url": "https://github.com/huanglihome1996-rgb/dsh-desktop-tool-ocr"
+      },
+      "versions": [
+        {
+          "version": "0.2.0",
+          "publishTimestamp": 1794468377,
+          "engines": {
+            "dsh": "0.2.2-rc.1"
+          },
+          "source": {
+            "url": "https://github.com/huanglihome1996-rgb/dsh-desktop-tool-ocr",
+            "type": "git",
+            "commit": "ca3aca39e8f7c60b2805abe287921168f570e5f8"
+          }
+        },
+        {
+          "version": "0.1.0",
+          "publishTimestamp": 1794465937,
+          "engines": {
+            "dsh": "0.2.2-rc.1"
+          },
+          "source": {
+            "type": "git",
+            "url": "https://github.com/huanglihome1996-rgb/dsh-desktop-tool-ocr",
+            "commit": "0c5b4f703309c344b5939f901c155e80757ca824"
+          }
+        }
+      ]
+    }
+  ]
 }
