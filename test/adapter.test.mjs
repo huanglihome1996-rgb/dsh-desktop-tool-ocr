@@ -35,6 +35,15 @@ test('backend failures are not cached',async()=>{
  const adapter=createAdapter(ctx,'s','r',async()=>({recognize:async()=>{n++;throw Error('failed')}}));
  await assert.rejects(run(adapter,[{content:[image]}]),/failed/);await assert.rejects(run(adapter,[{content:[image]}]),/failed/);assert.equal(n,2);
 });
+test('verified evidence corrects inner declaration before native dispatch',async()=>{
+ let supported=false,corrected=0,last;
+ const ctx={attachments:{imageHostPath:()=> 'x'},llm:{resolveModelInfo:async()=>({inputModalities:supported?['text','image']:['text']}),async *stream(o){last=o;yield {type:'finish',reason:{kind:'stop'}};}}};
+ const adapter=createAdapter(ctx,'s','r',async()=>{throw Error('OCR should not run')},{checkCapability:async()=>({status:'supported',routeVerified:true}),correctCapability:async()=>{supported=true;corrected++;}});
+ await run(adapter,[{content:[image]}]);assert.equal(corrected,1);assert.equal(last.messages[0].content[0].type,'image');
+});
+test('unsupported route evidence overrides incorrect native declaration',async()=>{
+ const f=fixture(['text','image'],{checkCapability:async()=>({status:'unsupported',routeVerified:true})});await run(f.adapter,[{content:[image]}]);assert.equal(f.calls,1);
+});
 test('invalid cache configuration rejected',()=>assert.throws(()=>fixture(['text'],{cacheSize:-1}),/cacheSize/));
 test('backend config file hot switching invalidates recognition cache',async()=>{
  const dir=await mkdtemp(join(tmpdir(),'backend-switch-')),file=join(dir,'backend.json');

@@ -3,7 +3,7 @@
   "repository": { "type": "git", "url": "git+https://github.com/huanglihome1996-rgb/dsh-desktop-tool-ocr.git" },
   "bugs": { "url": "https://github.com/huanglihome1996-rgb/dsh-desktop-tool-ocr/issues" },
   "homepage": "https://github.com/huanglihome1996-rgb/dsh-desktop-tool-ocr#readme",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Automatic image input for DSH: native vision passthrough and pluggable local OCR or remote vision backends",
   "type": "module",
   "main": "src/index.mjs",

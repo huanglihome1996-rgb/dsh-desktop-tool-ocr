@@ -1,5 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { createBackend, registerBackend } from './backends.mjs';
+import { createCapabilityChecker } from './capabilities.mjs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 export { createBackend, registerBackend } from './backends.mjs';
 export const name = 'desktop-tool-ocr';
 export const inject = ['llm', 'attachments'];
@@ -55,8 +58,14 @@ export function createAdapter(ctx, source, route, getBackend, config = {}) {
     listModels: async () => (await ctx.llm.listModels(source)).map(info => augmented(info, route)),
     resolveModel: async (_p, model, signal) => augmented(await ctx.llm.resolveModelInfo(source, model, signal), route),
     async prepareCall(_p, model, signal) {
-      const original = await ctx.llm.resolveModelInfo(source, model, signal);
-      const native = imageCapable(original) && !config.forceRecognition;
+      let original = await ctx.llm.resolveModelInfo(source, model, signal);
+      const evidence = config.checkCapability ? await config.checkCapability(source, model) : undefined;
+      if (evidence?.status === 'supported' && evidence.routeVerified && !imageCapable(original) && config.correctCapability) {
+        await config.correctCapability(source, model, true);
+        original = await ctx.llm.resolveModelInfo(source, model, signal);
+      }
+      const verifiedNo = evidence?.routeVerified && evidence.status === 'unsupported';
+      const native = imageCapable(original) && !verifiedNo && !config.forceRecognition;
       return {
         model: augmented(original, route),
         stream: async function* (options) {
@@ -104,6 +113,54 @@ export function apply(ctx, config = {}) {
   const prefix = config.prefix ?? DEFAULT_PREFIX;
   if (typeof prefix !== 'string' || !prefix) throw new Error('prefix must be a nonempty string');
   const getBackend = backendManager(ctx, config);
+  const settings = () => ctx.get?.('settings');
+  const routeConfig = source => {
+    try {
+      for (const row of settings()?.describe({ redactSecrets: true }) ?? []) {
+        const p = row.value?.providers?.[source];
+        if (p) return { ns: row.ns, revision: row.revision, profile: p, baseURL: p.baseURL, api: p.api };
+      }
+    } catch {}
+    return {};
+  };
+  const checkConfig = { autoCorrect: true, cacheFile: join(process.env.DSH_HOME ?? join(homedir(), '.dsh'), 'desktop-tool-ocr-capabilities.json'), ...config.capabilityCheck };
+  const checker = createCapabilityChecker(checkConfig, {
+    resolveSecret: async key => (await ctx.get?.('credentials')?.resolve(key))?.value ?? process.env[key],
+    warn: text => ctx.logger.warn(text)
+  });
+  const checkCapability = (source, model) => {
+    const route = routeConfig(source);
+    return checker.check(source, model, { baseURL: route.baseURL, api: route.api });
+  };
+  async function correctCapability(source, model, supported) {
+    // Public settings CAS edit, not an adapter monkey patch. Only explicit opt-in can persist corrections.
+    if (!checkConfig.autoCorrect) return;
+    const route = routeConfig(source);
+    const models = route.profile?.models;
+    const index = models?.findIndex(m => m.id === model);
+    if (!route.ns || index === undefined || index < 0) return;
+    const input = supported ? ['text', 'image'] : ['text'];
+    if (JSON.stringify(models[index].input) === JSON.stringify(input)) return;
+    await settings().mutate(route.ns, [{ op: 'set', path: ['providers', source, 'models', index, 'input'], value: input }], route.revision);
+  }
+  let scanning = false;
+  async function scan() {
+    if (scanning) return; scanning = true;
+    try {
+      for (const provider of ctx.llm.listProviders()) {
+        if (provider.id.startsWith(prefix) || provider.id.startsWith(DEFAULT_PREFIX)) continue;
+        if (config.providers && !config.providers.includes(provider.id)) continue;
+        for (const model of await ctx.llm.listModels(provider.id)) {
+          const result = await checkCapability(provider.id, model.id);
+          if (result.status !== 'unknown' && result.routeVerified && checkConfig.autoCorrect) {
+            await correctCapability(provider.id, model.id, result.status === 'supported');
+          }
+        }
+      }
+      await checker.flush();
+    } catch (error) { ctx.logger.warn('Model capability scan: ' + error.message); }
+    finally { scanning = false; }
+  }
   const routes = new Map();
   let syncing = false;
   function sync() {
@@ -115,11 +172,14 @@ export function apply(ctx, config = {}) {
       for (const source of sources) {
         if (routes.has(source)) continue;
         const route = prefix + source;
-        routes.set(source, ctx.llm.registerAdapter([route], createAdapter(ctx, source, route, getBackend, config)));
+        routes.set(source, ctx.llm.registerAdapter([route], createAdapter(ctx, source, route, getBackend, { ...config, checkCapability, correctCapability })));
       }
     } finally { syncing = false; }
   }
-  ctx.on('llm/adapters-updated', sync);
+  ctx.on('llm/adapters-updated', () => { sync(); void scan(); });
+  ctx.on('loader/volatile-update', () => { void scan(); });
+  ctx.on('settings/document-updated', () => { void scan(); });
   sync();
+  void scan();
   ctx.logger.info('dsh-auto-vision: native vision passthrough and configurable recognition backend enabled');
 }

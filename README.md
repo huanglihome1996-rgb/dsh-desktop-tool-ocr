@@ -143,6 +143,56 @@ const dispose = registerBackend('my-engine', (config, services) => ({
 
 注册需要与主插件解析到**同一个包实例**，并在第一次使用该 type 前完成。自定义后端自行负责外发数据授权、凭证、超时、大小限制与清理。`createBackend(config, services)` 也可直接用于测试；services 支持 `resolveSecret(name)` 和可注入的 `fetch`。
 
+## v0.2.0：官方模型图片能力核验
+
+安装激活后扫描原供应商模型列表；模型目录或设置发生变化时重扫，在实际调用增强入口前也核验该精确模型。默认缓存24小时，到期会在后续扫描/调用时更新，不会每条消息联网。核验只读官方模型元数据/公开文档，不上传聊天或图片，也不调用收费推理。
+
+默认支持：
+- OpenAI 官方模型 Markdown：必须匹配精确 `Model ID` 或页面明确列出的 snapshot，并解析 `Input modalities`；404、格式变化和缺字段均为 unknown。
+- DeepSeek 官方 vision 文档中明确的 `deepseek-flash` 与 `deepseek-v4-flash-vision-exp`。其他ID不推断，可配置官方 `/models` 接口读取 `input_modalities`。
+- 可配置官方 models API：DeepSeek `input_modalities`、Anthropic `capabilities.image_input.supported` 等机器可读字段。无模态字段的 `/models` 不构成图片能力证据。
+- Google、通义、豆包、GLM及未覆盖厂商当前不内置通用文档解析器，保持 unknown；不要把模型名字中有 vision 或输出支持图片误判为输入支持图片。
+
+报告默认保存于 `$DSH_HOME/desktop-tool-ocr-capabilities.json`（无 DSH_HOME 时为 `~/.dsh/`），包含模型ID、supported/unsupported/unknown、来源URL、检查时间、证据hash和路由是否可信。报告不含密钥/图片，可删除后触发刷新。离线或解析失败保持 unknown，不当作不支持。
+
+### 厂商能力 ≠ 网关能力
+
+官方证明模型能看图，不证明第三方网关的同名ID可传图。默认只有匹配厂商的官方 HTTPS 路由会把官方证据作为修正依据；第三方网关只记录厂商证据，**不自动打开图片传输**。已有 DSH 图片声明仍保持原行为。
+
+对已确认官方直连且 DSH 声明错误的 `llm-pi-ai` 自定义 `providers.*.models[]`，通过公共 settings CAS 接口修正具体模型的 `input` 字段。默认 `autoCorrect: true`；不支持该设置结构的 adapter 只生成报告，不能承诺自动修复。修改后会重新解析内层能力，确认支持才直传，避免只改外层后内层仍拒绝图片。宿主设置写入会持久化到 profile，建议保留自己的配置备份。
+
+```yaml
+- id: desktop-auto-ocr
+  name: dsh-desktop-tool-ocr
+  config:
+    backendConfigFile: 'C:/path/recognition.json'
+    capabilityCheck:
+      enabled: true
+      autoCorrect: true
+      ttlMs: 86400000
+      timeoutMs: 8000
+      # 可选：报告路径
+      cacheFile: 'C:/path/capabilities.json'
+      providers:
+        deepseek:
+          catalogURL: 'https://api.deepseek.com/models'
+          apiKeyEnv: DEEPSEEK_API_KEY
+        # 仅当你确定该网关按这些精确ID转发并允许图片时开启
+        hth:
+          trustGateway: false
+          # 别名映射必须由你提供，插件不猜测；示例不代表真实模型关系
+          models:
+            my-confirmed-alias: gpt-4.1
+      # 明确手动覆盖，作用于指定供应商+精确模型。会作为路由可信依据。
+      overrides:
+        my-provider:
+          my-tested-model: true
+```
+
+`autoCorrect: false` 只记录/用于增强路由的安全降级，不写原模型配置。`enabled: false` 关闭官方联网核验（手动 overrides 仍有效）。凭据仅在显式设置 `catalogURL` + `apiKeyEnv` 时读指定秘密，不会把网关 key 自动发给模型厂商。catalogURL 仅允许官方固定域名的 models 元数据路径，禁止跳转、URL内凭据和推理端点。模型信息会作为URL的一部分发给官方站点；若不允许此行为，请关闭核验。
+
+**无法承诺任意新模型都能自动查到或修正**：不认识的ID、厂商文档未更新、网关别名、自定义adapter、缺失能力字段均保留原声明/OCR路径并在报告说明原因；需要映射、官方元数据源或手动覆盖。不会发送测试图片来探测能力。
+
 ## 安全与限制
 
 - 不修改聊天记录；冻结消息不会被原位更改。
@@ -161,4 +211,4 @@ npm pack
 
 测试覆盖视觉直传、非视觉投影、冻结历史、缓存、嵌套图片、本地 argv 与输出协议、错误/取消/超时/限额、远端显式同意和模拟 API、第三方注册。
 
-MIT License。当前版本 0.1.0。
+MIT License。当前版本 0.2.0。
